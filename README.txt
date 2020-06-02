@@ -1,7 +1,7 @@
 ########################################################################
 
 Описание приложения QuickUsers_LastLogin.exe
-(D:\QUIK\Tools\QuickUsers_LastLogin на 50-ом сервере)
+(*:\*****\*****\QuickUsers_LastLogin на ********-ом сервере)
 
 Питоновский скрипт скомпилированный в исполняемый файл для простоты
 использования возвращает из базы QUIK_DB список пользователей (USER_ID),
@@ -18,7 +18,7 @@ b	Котировки
 ########################################################################
 
 
-Task Scheduler xml: D:\QUIK\Tools\QuickUsers_LastLogin\QuickUsers_LastLogin.xml
+Task Scheduler xml: *:\****\****\******\QuickUsers_LastLogin.xml
 
 Таск настроен на запуск по пятницам в 6 утра, раз в две недели.
 
@@ -28,18 +28,18 @@ config.ini - конфигурационный файл. Секция [SqlConn] �
              секция [EmailCfg] для настройки уведомлений
 
 [SqlConn]
-server = 10.1.110.130
-port = 1433
-user = sa
-password = Rdbaty9u
-database = QUIK_DB
+server = 
+port = 
+user = 
+password = 
+database = 
 
 [EmailCfg]
-server = relay.rencap.com
+server = 
 subject = QUIK: unused market data
-me = Monitoring_IT_ETG@rencap.com
-you = aosipov@rencap.com
-Cc = aosipov@rencap.com
+me = 
+you = 
+Cc = 
 
 SQL запрос, который отправляется на сервер:
 
