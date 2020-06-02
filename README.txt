@@ -1,0 +1,78 @@
+########################################################################
+
+Описание приложения QuickUsers_LastLogin.exe
+(D:\QUIK\Tools\QuickUsers_LastLogin на 50-ом сервере)
+
+Питоновский скрипт скомпилированный в исполняемый файл для простоты
+использования возвращает из базы QUIK_DB список пользователей (USER_ID),
+которые не входили в систему больше 60 календарных дней или не входили
+вообще и имееют включенными один из следующих наборов опций по классам:
+LSE_IOB_D, LSE_SET_D, NY_*, NA_*, JSE, JSE_DER, HKEX_ALL
+
+v+p или v+b или v+p+b
+
+v	Класс доступен
+p	Расширенные параметры
+b	Котировки
+
+########################################################################
+
+
+Task Scheduler xml: D:\QUIK\Tools\QuickUsers_LastLogin\QuickUsers_LastLogin.xml
+
+Таск настроен на запуск по пятницам в 6 утра, раз в две недели.
+
+QuickUsers_LastLogin.log - сюда запишется любая ошибка, если произойдет во время исполнения программы
+
+config.ini - конфигурационный файл. Секция [SqlConn] для настройки подключения к базе,
+             секция [EmailCfg] для настройки уведомлений
+
+[SqlConn]
+server = 10.1.110.130
+port = 1433
+user = sa
+password = Rdbaty9u
+database = QUIK_DB
+
+[EmailCfg]
+server = relay.rencap.com
+subject = QUIK: unused market data
+me = Monitoring_IT_ETG@rencap.com
+you = aosipov@rencap.com
+Cc = aosipov@rencap.com
+
+SQL запрос, который отправляется на сервер:
+
+use QUIK_DB
+select t1.USER_ID, t1.BEGIN_DATE, t2.lastLogin, p.PERSON_FIRST_NAME, p.PERSON_LAST_NAME, p.PERSON_MIDDLE_NAME, uidsecclas.SECURITY_CLASS_CODE
+from [dbo].[USERS] t1 with (NOLOCK)
+left outer join
+        (select action_parameter2, max(action_time) as lastLogin
+        from  [audit].[AUDIT_LOG] with (NOLOCK)
+        where action='SRV_USER_LOGON'
+        group by action_parameter2) as t2
+    on t1.USER_ID = t2.action_parameter2
+join [dbo].[PERSON] p
+    on p.PERSON_ID = t1.PERSON_ID
+
+join (SELECT sp.USER_ID, sc.SECURITY_CLASS_CODE
+  FROM [QUIK_DB].[dbo].[USER_SECC_PERM] sp with (NOLOCK)
+  join (SELECT SECURITY_CLASS_ID, SECURITY_CLASS_CODE
+        FROM [QUIK_DB].[dbo].[SECURITY_CLASS] with (NOLOCK)
+        where SECURITY_CLASS_CODE in ('LSE_IOB_D','LSE_SET_D', 'JSE', 'JSE_DER', 'HKEX_ALL', 'NY_%', 'NA_%')) as sc
+  on sc.SECURITY_CLASS_ID = sp.SECURITY_CLASS_ID
+  where (
+  (MODE like ('%v%') COLLATE Latin1_General_BIN and MODE like ('%p%') COLLATE Latin1_General_BIN)
+   or (MODE like ('%v%') COLLATE Latin1_General_BIN and MODE like ('%b%') COLLATE Latin1_General_BIN)
+   or (MODE like ('%v%') COLLATE Latin1_General_BIN and MODE like ('%b%') COLLATE Latin1_General_BIN and MODE like ('%p%') COLLATE Latin1_General_BIN)
+   ) ) as uidsecclas
+   on t1.USER_ID = uidsecclas.USER_ID
+
+
+where (t1.BEGIN_DATE < GETDATE() - 60)
+and (lastLogin is null or lastLogin < (GETDATE() - 60))
+and t1.mode NOT LIKE ('%l%') COLLATE Latin1_General_BIN and (t1.END_DATE > GETDATE())
+and t1.DISABLED != 'y'
+order by lastLogin desc
+
+
